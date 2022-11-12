@@ -13,6 +13,7 @@ const UI = ({
 	const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
 	const countryFull = regionNames.of(country || 'us');
 
+	// REFACTOR THESE CALCULATIONS TO BE DONE ON THE BACKEND
 	const elevationMeters =
 		Math.round((elevation + Number.EPSILON) * 100 * 0.3048) / 100;
 
