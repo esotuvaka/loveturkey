@@ -24,7 +24,7 @@ const UI = ({
 
 	return (
 		<>
-			<aside className="z-10 flex justify-center lg:absolute lg:h-screen lg:w-1/3 ">
+			<aside className="z-10 flex justify-center lg:absolute lg:h-screen lg:w-1/4 ">
 				<div className="absolute z-10 w-full px-6">
 					<h1
 						id="loveturkey"
@@ -33,9 +33,9 @@ const UI = ({
 						LOVETURKEY
 					</h1>
 				</div>
-				<div className="absolute mt-[100vw] flex w-[100vw] flex-col p-6 py-0 pb-8 pt-4 min-[512px]:mt-[512px] min-[512px]:w-[512px] lg:mt-[35%] lg:block lg:h-full lg:w-full lg:py-6">
-					<div className="ml-[20%] flex h-16 items-end ">
-						<div className="flex h-16 items-start rounded-md bg-red-700 transition-all duration-200 hover:h-[60px] active:h-[56px]">
+				<div className="absolute mt-[100vw] flex w-[100vw] flex-col p-6 py-0 pb-8 pt-4 min-[512px]:mt-[512px] min-[512px]:w-[512px] lg:mt-0 lg:block lg:h-full lg:w-full lg:py-6 lg:pt-[35%]">
+					<div className="ml-[20%] flex h-16 items-end">
+						<div className="flex h-16 items-start rounded-md bg-red-700 shadow-inner shadow-black transition-all duration-200 hover:h-[60px] active:h-[56px]">
 							<button
 								onClick={() => {
 									changeIndex((prev) => prev + 1);
@@ -71,7 +71,7 @@ const UI = ({
 					)}
 				</div>
 			</aside>
-			<aside className="absolute bottom-0 z-10 mt-[145vw] hidden w-full pb-2 lg:right-0 lg:flex lg:h-screen lg:w-1/3">
+			<aside className="absolute bottom-0 z-10 mt-[145vw] hidden w-full pb-2 lg:right-0 lg:flex lg:h-screen lg:w-1/4">
 				{loading ? (
 					<></>
 				) : (

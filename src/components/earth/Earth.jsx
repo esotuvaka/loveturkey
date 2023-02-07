@@ -8,6 +8,11 @@ import EarthDayMap from '../../assets/textures/earth-simple.jpg';
 import Pin from '../pin/Pin';
 
 export function Earth({ latitude, longitude }) {
+	// SERVER VS CLIENT CALCULATIONS
+	// If a calculation uses constants (conversion from ft to m, radians, etc), keep it on the CLIENT
+	// If a calculation or algorithm is complex, or is business logic, do it on the SERVER (User's CPU is a limiting factor)
+	// If a section of code gives you an edge over competitors, keep it on the server to prevent reverse engineering
+
 	const [colorMap] = useLoader(TextureLoader, [EarthDayMap]);
 
 	const LAT_OFFSET = -0.080705;

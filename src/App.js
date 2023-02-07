@@ -23,6 +23,7 @@ function App() {
 			});
 	};
 
+	// at index of 50, refetch another 50 airports
 	useEffect(() => {
 		setAirport(airportData[index]);
 		console.log(airportData[index]);
@@ -66,7 +67,7 @@ function App() {
 			/>
 			<section
 				id="canvas-sizer"
-				className="mx-auto h-[100vw] max-h-[512px] w-full max-w-lg pt-16 lg:h-[100vh] lg:max-h-[1080px] lg:w-[100vw] lg:max-w-none lg:pt-0
+				className="mx-auto h-[100vw] max-h-[512px] w-full max-w-lg pt-16 lg:h-[100vh] lg:max-h-[1080px] lg:w-[100vw] lg:max-w-none lg:pt-0 2xl:max-h-screen
 				"
 			>
 				<Canvas shadows>
