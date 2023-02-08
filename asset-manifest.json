@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/loveturkey/static/css/main.106c9a1a.css",
+    "main.js": "/loveturkey/static/js/main.8ae79a22.js",
+    "static/js/787.ec240e5d.chunk.js": "/loveturkey/static/js/787.ec240e5d.chunk.js",
+    "static/media/earth-simple.jpg": "/loveturkey/static/media/earth-simple.f36cf2fdf4e474c81924.jpg",
+    "index.html": "/loveturkey/index.html",
+    "main.106c9a1a.css.map": "/loveturkey/static/css/main.106c9a1a.css.map",
+    "main.8ae79a22.js.map": "/loveturkey/static/js/main.8ae79a22.js.map",
+    "787.ec240e5d.chunk.js.map": "/loveturkey/static/js/787.ec240e5d.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.106c9a1a.css",
+    "static/js/main.8ae79a22.js"
+  ]
+}
