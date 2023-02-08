@@ -5,12 +5,14 @@ import { Earth } from './components/earth/Earth';
 
 import UI from './components/ui/UI';
 
+import staticAirports from './airports.json';
+
 function App() {
 	const [airportData, setAirportData] = useState([]);
 	const [airport, setAirport] = useState({});
 	const [loading, setLoading] = useState(true);
 
-	const [index, setIndex] = useState(null);
+	const [index, setIndex] = useState(0);
 
 	const isDataFetched = useRef(false);
 
@@ -20,6 +22,10 @@ function App() {
 			.then((data) => {
 				setAirportData(data);
 				console.log(data);
+			})
+			.catch((err) => {
+				console.log(err);
+				setAirportData(staticAirports);
 			});
 	};
 
@@ -67,8 +73,7 @@ function App() {
 			/>
 			<section
 				id="canvas-sizer"
-				className="mx-auto h-[100vw] max-h-[512px] w-full max-w-lg pt-16 lg:h-[100vh] lg:max-h-[1080px] lg:w-[100vw] lg:max-w-none lg:pt-0 2xl:max-h-screen
-				"
+				className="mx-auto h-[100vw] max-h-[512px] w-full max-w-lg pt-16 lg:h-[100vh] lg:max-h-[1080px] lg:w-[100vw] lg:max-w-none lg:pt-0 2xl:max-h-screen"
 			>
 				<Canvas shadows>
 					<Suspense fallback={null}>
