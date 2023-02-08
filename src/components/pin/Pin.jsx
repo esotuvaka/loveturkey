@@ -2,7 +2,6 @@ import React from 'react';
 import { useRef } from 'react';
 
 const Pin = () => {
-	const needlePoint = useRef();
 	const needleHead = useRef();
 
 	return (

@@ -24,8 +24,8 @@ function App() {
 				console.log(data);
 			})
 			.catch((err) => {
-				console.log(err);
 				setAirportData(staticAirports);
+				console.log(err);
 			});
 	};
 
