@@ -1,23 +1,23 @@
-import React from 'react';
-import { useRef } from 'react';
+import React, { forwardRef } from "react";
+import { useRef } from "react";
 
-const Pin = () => {
+const Pin = forwardRef((props, ref) => {
 	const needleHead = useRef();
 
 	return (
 		<>
-			<group>
+			<group {...props}>
 				<mesh ref={needleHead} position={[0, 0, 3.07]}>
 					<sphereGeometry args={[0.03]} />
-					<meshStandardMaterial color={'red'} />
+					<meshStandardMaterial color={"red"} />
 				</mesh>
-				<mesh position={[0, 0, 3.02]} rotation={[Math.PI / 2, 0, 0]}>
+				<mesh ref={ref} position={[0, 0, 3.02]} rotation={[Math.PI / 2, 0, 0]}>
 					<cylinderGeometry args={[0.008, 0.008, 0.08, 8]} />
-					<meshStandardMaterial color={'gray'} />
+					<meshStandardMaterial color={"gray"} />
 				</mesh>
 			</group>
 		</>
 	);
-};
+});
 
 export default Pin;

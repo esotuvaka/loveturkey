@@ -1,11 +1,18 @@
-import React from 'react';
-import { TextureLoader, Shape, DoubleSide } from 'three';
-import { useLoader } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
-import { useSpring, animated, config } from '@react-spring/three';
+import React, { forwardRef, useRef } from "react";
+import {
+	TextureLoader,
+	Shape,
+	DoubleSide,
+	Vector3,
+	CatmullRomCurve3,
+	TubeGeometry,
+} from "three";
+import { useFrame, useLoader } from "@react-three/fiber";
+import { OrbitControls, QuadraticBezierLine } from "@react-three/drei";
+import { useSpring, animated, config } from "@react-spring/three";
 
-import EarthDayMap from '../../assets/textures/earth-simple.jpg';
-import Pin from '../pin/Pin';
+import EarthDayMap from "../../assets/textures/earth-simple.jpg";
+import Pin from "../pin/Pin";
 
 export function Earth({ latitude, longitude }) {
 	// SERVER VS CLIENT CALCULATIONS
@@ -24,32 +31,58 @@ export function Earth({ latitude, longitude }) {
 	const HQ_LAT = (36.884804 * Math.PI) / 180 + LAT_OFFSET;
 	const HQ_LON = -(30.704044 * Math.PI) / 180 + LON_OFFSET;
 
+	const point1 = { x: HQ_LAT, y: HQ_LON, z: 0 };
+	const point2 =
+		latitude && longitude
+			? { x: latRot, y: lonRot, z: 0 }
+			: { x: 0, y: 0, z: 0 };
+
 	const { rotation } = useSpring({
 		rotation: latitude && longitude ? [latRot, lonRot, 0] : [HQ_LAT, HQ_LON, 0],
 		config: config.slow,
 	});
 
-	const getHeartShape = () => {
-		const x = 0,
-			y = 0;
+	const Heart = forwardRef((props, ref) => {
+		const getHeartShape = () => {
+			const x = 0,
+				y = 0;
 
-		const heartShape = new Shape();
+			const heartShape = new Shape();
 
-		heartShape.moveTo(x + 5, y + 5);
-		heartShape.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
-		heartShape.bezierCurveTo(x - 6, y, x - 6, y + 7, x - 6, y + 7);
-		heartShape.bezierCurveTo(x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19);
-		heartShape.bezierCurveTo(x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7);
-		heartShape.bezierCurveTo(x + 16, y + 7, x + 16, y, x + 10, y);
-		heartShape.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
+			heartShape.moveTo(x + 5, y + 5);
+			heartShape.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
+			heartShape.bezierCurveTo(x - 6, y, x - 6, y + 7, x - 6, y + 7);
+			heartShape.bezierCurveTo(x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19);
+			heartShape.bezierCurveTo(x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7);
+			heartShape.bezierCurveTo(x + 16, y + 7, x + 16, y, x + 10, y);
+			heartShape.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
 
-		return heartShape;
-	};
+			return heartShape;
+		};
 
-	const extrudeSettings = {
-		steps: 1,
-		depth: 3,
-	};
+		const extrudeSettings = {
+			steps: 1,
+			depth: 3,
+		};
+
+		return (
+			<mesh
+				ref={ref}
+				{...props}
+				castShadow
+				receiveShadow
+				rotation={[3.3, 1.1, 0]}
+				position={[2.18, 1.65, -1.29]}
+				scale={[0.003, 0.003, 0.003]}
+			>
+				<extrudeGeometry args={[getHeartShape(), extrudeSettings]} />
+				<meshStandardMaterial color={"red"} side={DoubleSide} />
+			</mesh>
+		);
+	});
+
+	const heart = useRef();
+	const pin = useRef();
 
 	return (
 		<>
@@ -69,19 +102,39 @@ export function Earth({ latitude, longitude }) {
 					panSpeed={0.5}
 					rotateSpeed={0.4}
 				/>
-				<mesh
-					castShadow
-					receiveShadow
-					rotation={[3.3, 1.1, 0]}
-					position={[2.18, 1.65, -1.29]}
-					scale={[0.003, 0.003, 0.003]}
-				>
-					<extrudeGeometry args={[getHeartShape(), extrudeSettings]} />
-					<meshStandardMaterial color={'red'} side={DoubleSide} />
-				</mesh>
+				<Heart ref={heart} />
 			</animated.mesh>
-
-			{latitude && longitude ? <Pin /> : <></>}
+			{latitude && longitude ? (
+				<>
+					<Line start={heart} end={pin} />
+				</>
+			) : (
+				<></>
+			)}
+			<Pin ref={pin} />
 		</>
 	);
+
+	function Line({ start, end, v1 = new Vector3(), v2 = new Vector3() }) {
+		const ref = useRef();
+
+		useFrame(() => {
+			const startPoint = start.current.getWorldPosition(v1);
+			const endPoint = end.current.getWorldPosition(v2);
+
+			const midX = (startPoint.x - endPoint.x) / 2;
+			const midY = (startPoint.y - endPoint.y) / 2;
+			const midZ = startPoint.z - endPoint.z + 4;
+
+			const midPoint = new Vector3(midX, midY, midZ);
+
+			ref.current.setPoints(startPoint, endPoint, midPoint);
+		}, []);
+
+		return (
+			<mesh>
+				<QuadraticBezierLine ref={ref} lineWidth={3} color="#ff2060" />
+			</mesh>
+		);
+	}
 }
