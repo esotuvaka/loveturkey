@@ -28,6 +28,7 @@ export function Earth({ latitude, longitude }) {
 
 	const [colorMap] = useLoader(TextureLoader, [EarthDayMap]);
 	const [catmullCurve, setCatmullCurve] = useState();
+	const [curvePoints, setCurvePoints] = useState({});
 
 	const LAT_OFFSET = -0.080705;
 	const LON_OFFSET = -Math.PI / 2;
@@ -43,15 +44,15 @@ export function Earth({ latitude, longitude }) {
 		config: config.slow,
 	});
 
-	function handleCurve(path) {
-		setCatmullCurve(path);
-		console.log("PATH HERE: " + path);
+	function handleLineChange({ startPoint, endPoint, midPoint }) {
+		setCurvePoints({ startPoint, endPoint, midPoint });
+		console.log("RERENDER");
 	}
 
-	const pathUpdater = useCallback((startPoint, endPoint, midPoint) => {
-		const path = new CatmullRomCurve3([startPoint, endPoint, midPoint]);
-		handleCurve(() => path);
-	}, []);
+	// const pathUpdater = useCallback((startPoint, endPoint, midPoint) => {
+	// 	const path = new CatmullRomCurve3([startPoint, endPoint, midPoint]);
+	// 	handleCurve(() => path);
+	// }, []);
 
 	const Heart = forwardRef((props, ref) => {
 		const getHeartShape = () => {
@@ -92,6 +93,8 @@ export function Earth({ latitude, longitude }) {
 		);
 	});
 
+	let pinPos = new Vector3(0, 0, 0);
+
 	const heart = useRef();
 	const pin = useRef();
 
@@ -118,7 +121,11 @@ export function Earth({ latitude, longitude }) {
 			{latitude && longitude ? (
 				<>
 					<Pin ref={pin} />
-					<Line start={heart} end={pin} />
+					<Line
+						start={heart}
+						end={pin}
+						handleLineChange={(data) => handleLineChange(data)}
+					/>
 					{/* <AnimatedPlane duration={5} /> */}
 				</>
 			) : (
@@ -127,7 +134,14 @@ export function Earth({ latitude, longitude }) {
 		</>
 	);
 
-	function Line({ start, end, v1 = new Vector3(), v2 = new Vector3() }) {
+	function Line({
+		start,
+		end,
+		v1 = new Vector3(),
+		v2 = new Vector3(),
+		handleLineChange,
+	}) {
+		// Line is drawn in reverse, from the pin -> HQ : startPoint -> endPoint
 		const ref = useRef();
 
 		function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
@@ -155,6 +169,10 @@ export function Earth({ latitude, longitude }) {
 				1000
 		);
 
+		const tempStartVec = new Vector3();
+		const tempEndVec = new Vector3();
+		const tempMidVec = new Vector3();
+
 		const startTime = useRef(Date.now());
 		const duration = 600;
 
@@ -162,17 +180,15 @@ export function Earth({ latitude, longitude }) {
 			const timeElapsed = Date.now() - startTime.current;
 
 			if (timeElapsed < duration) {
-				const startPoint = start.current.getWorldPosition(v1);
-				const endPoint = end.current.getWorldPosition(v2);
-
-				// +4 is max. Need a % multiplier, based on difference between the coords
+				// Get the positions of the start and end points
+				start.current.getWorldPosition(tempStartVec);
+				end.current.getWorldPosition(tempEndVec);
 
 				const arcScalarKm =
 					getDistanceFromLatLonInKm(latitude, longitude, 36.884804, 30.704044) /
 					1000;
 
 				let scalar = 1.75;
-
 				if (arcScalarKm > 1.75 && arcScalarKm < 2.25) {
 					scalar = arcScalarKm;
 				} else if (arcScalarKm > 2.25 && arcScalarKm < 2.75) {
@@ -181,14 +197,18 @@ export function Earth({ latitude, longitude }) {
 					scalar = 2.5;
 				}
 
-				const midX = (startPoint.x - endPoint.x) / 2;
-				const midY = (startPoint.y - endPoint.y) / 2;
-				const midZ = startPoint.z - endPoint.z + 1.5 + scalar;
+				// Calculate the position of the mid point
+				tempMidVec
+					.copy(tempStartVec)
+					.sub(tempEndVec)
+					.multiplyScalar(0.5)
+					.add(tempEndVec)
+					.setZ(tempStartVec.z - tempEndVec.z + 1.5 + scalar);
 
-				const midPoint = new Vector3(midX, midY, midZ);
+				// Set the points of the curve
+				ref.current.setPoints(tempStartVec, tempEndVec, tempMidVec);
 
-				ref.current.setPoints(startPoint, endPoint, midPoint);
-				console.log("Running code for 600ms");
+				console.log("<- frame count from Running code for 600ms");
 			}
 		}, []);
 
@@ -197,10 +217,15 @@ export function Earth({ latitude, longitude }) {
 				startTime.current = Date.now();
 			}, duration);
 
+			// from pin -> to HQ : from start -> to end
 			const from = start.current.getWorldPosition(v1);
 			const to = end.current.getWorldPosition(v2);
 
-			return () => clearTimeout(timer);
+			pinPos = from;
+
+			return () => {
+				clearTimeout(timer);
+			};
 		}, []);
 
 		return (
@@ -210,9 +235,11 @@ export function Earth({ latitude, longitude }) {
 		);
 	}
 
-	function AnimatedPlane({ duration }) {
+	function AnimatedPlane({ duration, curvePoints }) {
 		const planeRef = useRef();
-		planeRef.current.position.copy(catmullCurve.getPoint(0));
+
+		console.log("CURVE POINTS BELOW");
+		console.log(curvePoints);
 
 		useFrame((state, delta) => {
 			const t = (state.clock.elapsedTime % duration) / duration;
