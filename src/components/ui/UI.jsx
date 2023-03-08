@@ -1,7 +1,8 @@
-import React from 'react';
+import React from "react";
 
 const UI = ({
 	changeIndex,
+	confirmVisit,
 	loading,
 	latitude,
 	longitude,
@@ -10,8 +11,8 @@ const UI = ({
 	continent,
 	elevation,
 }) => {
-	const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
-	const countryFull = regionNames.of(country || 'us');
+	const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+	const countryFull = regionNames.of(country || "us");
 
 	// REFACTOR THESE CALCULATIONS TO BE DONE ON THE BACKEND
 	const elevationMeters =
@@ -50,24 +51,39 @@ const UI = ({
 					{loading ? (
 						<></>
 					) : (
-						<div className="ml-[10%] flex flex-col lg:mt-8 lg:ml-[20%]">
-							<h2 className="font-barlow text-3xl font-semibold lg:mt-2 lg:mb-2 lg:w-3/4 lg:text-4xl">
-								{name}
-							</h2>
-							<h3 className="font-barlow text-2xl text-ltred/80 lg:mb-2 lg:text-3xl">
-								{countryFull}, {continent}
-							</h3>
+						<>
+							<div className="ml-[10%] flex flex-col lg:mt-8 lg:ml-[20%]">
+								<h2 className="font-barlow text-3xl font-semibold lg:mt-2 lg:mb-2 lg:w-3/4 lg:text-4xl">
+									{name}
+								</h2>
+								<h3 className="font-barlow text-2xl text-ltred/80 lg:mb-2 lg:text-3xl">
+									{countryFull}, {continent}
+								</h3>
 
-							<p className="font-barlow text-xl">
-								Elevation: {elevation}ft / {elevationMeters}m
-							</p>
-							<p
-								className="w-full text-left font-barlow text-2xl font-semibold text-ltred lg:hidden lg:p-0 lg:text-4xl"
-								id="coords"
-							>
-								{latRounded}° N, {lonRounded}° W
-							</p>
-						</div>
+								<p className="font-barlow text-xl">
+									Elevation: {elevation}ft / {elevationMeters}m
+								</p>
+								<p
+									className="w-full text-left font-barlow text-2xl font-semibold text-ltred lg:hidden lg:p-0 lg:text-4xl"
+									id="coords"
+								>
+									{latRounded}° N, {lonRounded}° W
+								</p>
+							</div>
+							<div className="ml-[20%] mt-[20%] flex h-16 items-end">
+								<div className="flex h-16 items-start rounded-md bg-red-700 shadow-inner shadow-black transition-all duration-200 hover:h-[60px] active:h-[56px]">
+									<button
+										onClick={() => {
+											confirmVisit();
+										}}
+										id="search-button"
+										className="mb-2 w-min rounded-md bg-ltred px-4 py-2 align-middle font-barlow text-3xl font-bold text-white shadow-lg transition-all duration-200 "
+									>
+										Visit!
+									</button>
+								</div>
+							</div>
+						</>
 					)}
 				</div>
 			</aside>

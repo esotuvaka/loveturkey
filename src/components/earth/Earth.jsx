@@ -1,11 +1,17 @@
-import React, { forwardRef, useRef } from "react";
+import React, {
+	forwardRef,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import {
 	TextureLoader,
 	Shape,
 	DoubleSide,
 	Vector3,
 	CatmullRomCurve3,
-	TubeGeometry,
 } from "three";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { OrbitControls, QuadraticBezierLine } from "@react-three/drei";
@@ -21,6 +27,7 @@ export function Earth({ latitude, longitude }) {
 	// If a section of code gives you an edge over competitors, keep it on the server to prevent reverse engineering
 
 	const [colorMap] = useLoader(TextureLoader, [EarthDayMap]);
+	const [catmullCurve, setCatmullCurve] = useState();
 
 	const LAT_OFFSET = -0.080705;
 	const LON_OFFSET = -Math.PI / 2;
@@ -31,16 +38,20 @@ export function Earth({ latitude, longitude }) {
 	const HQ_LAT = (36.884804 * Math.PI) / 180 + LAT_OFFSET;
 	const HQ_LON = -(30.704044 * Math.PI) / 180 + LON_OFFSET;
 
-	const point1 = { x: HQ_LAT, y: HQ_LON, z: 0 };
-	const point2 =
-		latitude && longitude
-			? { x: latRot, y: lonRot, z: 0 }
-			: { x: 0, y: 0, z: 0 };
-
 	const { rotation } = useSpring({
 		rotation: latitude && longitude ? [latRot, lonRot, 0] : [HQ_LAT, HQ_LON, 0],
 		config: config.slow,
 	});
+
+	function handleCurve(path) {
+		setCatmullCurve(path);
+		console.log("PATH HERE: " + path);
+	}
+
+	const pathUpdater = useCallback((startPoint, endPoint, midPoint) => {
+		const path = new CatmullRomCurve3([startPoint, endPoint, midPoint]);
+		handleCurve(() => path);
+	}, []);
 
 	const Heart = forwardRef((props, ref) => {
 		const getHeartShape = () => {
@@ -106,34 +117,113 @@ export function Earth({ latitude, longitude }) {
 			</animated.mesh>
 			{latitude && longitude ? (
 				<>
+					<Pin ref={pin} />
 					<Line start={heart} end={pin} />
+					{/* <AnimatedPlane duration={5} /> */}
 				</>
 			) : (
 				<></>
 			)}
-			<Pin ref={pin} />
 		</>
 	);
 
 	function Line({ start, end, v1 = new Vector3(), v2 = new Vector3() }) {
 		const ref = useRef();
 
+		function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+			const R = 6371; // Radius of the earth in km
+			const dLat = deg2rad(lat2 - lat1); // deg2rad below
+			const dLon = deg2rad(lon2 - lon1);
+			const a =
+				Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+				Math.cos(deg2rad(lat1)) *
+					Math.cos(deg2rad(lat2)) *
+					Math.sin(dLon / 2) *
+					Math.sin(dLon / 2);
+			const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+			const d = R * c; // Distance in km
+			return d;
+		}
+
+		function deg2rad(deg) {
+			return deg * (Math.PI / 180);
+		}
+
+		console.log("Distance (scaled down x1000): ");
+		console.log(
+			getDistanceFromLatLonInKm(latitude, longitude, 36.884804, 30.704044) /
+				1000
+		);
+
+		const startTime = useRef(Date.now());
+		const duration = 600;
+
 		useFrame(() => {
-			const startPoint = start.current.getWorldPosition(v1);
-			const endPoint = end.current.getWorldPosition(v2);
+			const timeElapsed = Date.now() - startTime.current;
 
-			const midX = (startPoint.x - endPoint.x) / 2;
-			const midY = (startPoint.y - endPoint.y) / 2;
-			const midZ = startPoint.z - endPoint.z + 4;
+			if (timeElapsed < duration) {
+				const startPoint = start.current.getWorldPosition(v1);
+				const endPoint = end.current.getWorldPosition(v2);
 
-			const midPoint = new Vector3(midX, midY, midZ);
+				// +4 is max. Need a % multiplier, based on difference between the coords
 
-			ref.current.setPoints(startPoint, endPoint, midPoint);
+				const arcScalarKm =
+					getDistanceFromLatLonInKm(latitude, longitude, 36.884804, 30.704044) /
+					1000;
+
+				let scalar = 1.75;
+
+				if (arcScalarKm > 1.75 && arcScalarKm < 2.25) {
+					scalar = arcScalarKm;
+				} else if (arcScalarKm > 2.25 && arcScalarKm < 2.75) {
+					scalar = 2.25;
+				} else if (arcScalarKm > 2.75) {
+					scalar = 2.5;
+				}
+
+				const midX = (startPoint.x - endPoint.x) / 2;
+				const midY = (startPoint.y - endPoint.y) / 2;
+				const midZ = startPoint.z - endPoint.z + 1.5 + scalar;
+
+				const midPoint = new Vector3(midX, midY, midZ);
+
+				ref.current.setPoints(startPoint, endPoint, midPoint);
+				console.log("Running code for 600ms");
+			}
+		}, []);
+
+		useEffect(() => {
+			const timer = setTimeout(() => {
+				startTime.current = Date.now();
+			}, duration);
+
+			const from = start.current.getWorldPosition(v1);
+			const to = end.current.getWorldPosition(v2);
+
+			return () => clearTimeout(timer);
 		}, []);
 
 		return (
 			<mesh>
 				<QuadraticBezierLine ref={ref} lineWidth={3} color="#ff2060" />
+			</mesh>
+		);
+	}
+
+	function AnimatedPlane({ duration }) {
+		const planeRef = useRef();
+		planeRef.current.position.copy(catmullCurve.getPoint(0));
+
+		useFrame((state, delta) => {
+			const t = (state.clock.elapsedTime % duration) / duration;
+			const point = catmullCurve.getPointAt(t);
+			planeRef.current.position.copy(point);
+		});
+
+		return (
+			<mesh ref={planeRef}>
+				<boxGeometry args={[0.3, 0.3, 0.3]} />
+				<meshStandardMaterial />
 			</mesh>
 		);
 	}

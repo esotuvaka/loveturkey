@@ -1,11 +1,11 @@
-import './App.css';
-import { Suspense, useEffect, useState, useRef } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { Earth } from './components/earth/Earth';
+import "./App.css";
+import { Suspense, useEffect, useState, useRef } from "react";
+import { Canvas } from "@react-three/fiber";
+import { Earth } from "./components/earth/Earth";
 
-import UI from './components/ui/UI';
+import UI from "./components/ui/UI";
 
-import staticAirports from './airports.json';
+import staticAirports from "./airports.json";
 
 function App() {
 	const [airportData, setAirportData] = useState([]);
@@ -55,14 +55,21 @@ function App() {
 		}
 	}, []);
 
+	function confirmVisit() {
+		// Needs to start a fetch for tourist destinations
+		// start the plane flying animation
+		// prevent the search functionality
+	}
+
 	return (
 		<main className="h-full w-full">
 			<UI
 				changeIndex={(data) => {
 					setIndex(data);
 					setLoading(false);
-					console.log('INDEX HERE: ' + (index + 1));
+					console.log("INDEX HERE: " + (index + 1));
 				}}
+				confirmVisit={confirmVisit()}
 				loading={loading}
 				latitude={airport?.latitude_deg}
 				longitude={airport?.longitude_deg}
