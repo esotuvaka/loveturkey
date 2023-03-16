@@ -1,8 +1,7 @@
 import React, {
 	forwardRef,
-	useCallback,
+	Suspense,
 	useEffect,
-	useMemo,
 	useRef,
 	useState,
 } from "react";
@@ -11,24 +10,23 @@ import {
 	Shape,
 	DoubleSide,
 	Vector3,
-	CatmullRomCurve3,
+	QuadraticBezierCurve3,
 } from "three";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { OrbitControls, QuadraticBezierLine } from "@react-three/drei";
 import { useSpring, animated, config } from "@react-spring/three";
 
+import Airplane from "../Airplane";
 import EarthDayMap from "../../assets/textures/earth-simple.jpg";
 import Pin from "../pin/Pin";
 
-export function Earth({ latitude, longitude }) {
+export function Earth({ latitude, longitude, planeAnimation }) {
 	// SERVER VS CLIENT CALCULATIONS
 	// If a calculation uses constants (conversion from ft to m, radians, etc), keep it on the CLIENT
 	// If a calculation or algorithm is complex, or is business logic, do it on the SERVER (User's CPU is a limiting factor)
 	// If a section of code gives you an edge over competitors, keep it on the server to prevent reverse engineering
 
 	const [colorMap] = useLoader(TextureLoader, [EarthDayMap]);
-	const [catmullCurve, setCatmullCurve] = useState();
-	const [curvePoints, setCurvePoints] = useState({});
 
 	const LAT_OFFSET = -0.080705;
 	const LON_OFFSET = -Math.PI / 2;
@@ -43,11 +41,6 @@ export function Earth({ latitude, longitude }) {
 		rotation: latitude && longitude ? [latRot, lonRot, 0] : [HQ_LAT, HQ_LON, 0],
 		config: config.slow,
 	});
-
-	function handleLineChange({ startPoint, endPoint, midPoint }) {
-		setCurvePoints({ startPoint, endPoint, midPoint });
-		console.log("RERENDER");
-	}
 
 	// const pathUpdater = useCallback((startPoint, endPoint, midPoint) => {
 	// 	const path = new CatmullRomCurve3([startPoint, endPoint, midPoint]);
@@ -93,8 +86,6 @@ export function Earth({ latitude, longitude }) {
 		);
 	});
 
-	let pinPos = new Vector3(0, 0, 0);
-
 	const heart = useRef();
 	const pin = useRef();
 
@@ -120,13 +111,9 @@ export function Earth({ latitude, longitude }) {
 			</animated.mesh>
 			{latitude && longitude ? (
 				<>
+					{planeAnimation ? <Line start={heart} end={pin} /> : <></>}
+
 					<Pin ref={pin} />
-					<Line
-						start={heart}
-						end={pin}
-						handleLineChange={(data) => handleLineChange(data)}
-					/>
-					{/* <AnimatedPlane duration={5} /> */}
 				</>
 			) : (
 				<></>
@@ -134,13 +121,7 @@ export function Earth({ latitude, longitude }) {
 		</>
 	);
 
-	function Line({
-		start,
-		end,
-		v1 = new Vector3(),
-		v2 = new Vector3(),
-		handleLineChange,
-	}) {
+	function Line({ start, end }) {
 		// Line is drawn in reverse, from the pin -> HQ : startPoint -> endPoint
 		const ref = useRef();
 
@@ -163,18 +144,12 @@ export function Earth({ latitude, longitude }) {
 			return deg * (Math.PI / 180);
 		}
 
-		console.log("Distance (scaled down x1000): ");
-		console.log(
-			getDistanceFromLatLonInKm(latitude, longitude, 36.884804, 30.704044) /
-				1000
-		);
-
 		const tempStartVec = new Vector3();
 		const tempEndVec = new Vector3();
 		const tempMidVec = new Vector3();
 
 		const startTime = useRef(Date.now());
-		const duration = 600;
+		const duration = 500;
 
 		useFrame(() => {
 			const timeElapsed = Date.now() - startTime.current;
@@ -208,7 +183,7 @@ export function Earth({ latitude, longitude }) {
 				// Set the points of the curve
 				ref.current.setPoints(tempStartVec, tempEndVec, tempMidVec);
 
-				console.log("<- frame count from Running code for 600ms");
+				console.log("<- frame count from Running code for 500ms");
 			}
 		}, []);
 
@@ -217,13 +192,8 @@ export function Earth({ latitude, longitude }) {
 				startTime.current = Date.now();
 			}, duration);
 
-			// from pin -> to HQ : from start -> to end
-			const from = start.current.getWorldPosition(v1);
-			const to = end.current.getWorldPosition(v2);
-
-			pinPos = from;
-
 			return () => {
+				console.log("CLEANUP");
 				clearTimeout(timer);
 			};
 		}, []);
@@ -231,27 +201,64 @@ export function Earth({ latitude, longitude }) {
 		return (
 			<mesh>
 				<QuadraticBezierLine ref={ref} lineWidth={3} color="#ff2060" />
+				<AnimatedPlane
+					startVector={tempStartVec}
+					endVector={tempEndVec}
+					midVector={tempMidVec}
+				/>
 			</mesh>
 		);
 	}
 
-	function AnimatedPlane({ duration, curvePoints }) {
+	function AnimatedPlane({ startVector, endVector, midVector }) {
 		const planeRef = useRef();
+		const [startTime, setStartTime] = useState(Date.now());
 
-		console.log("CURVE POINTS BELOW");
-		console.log(curvePoints);
+		// Define the animate function
+		const animate = (curve) => {
+			const duration = 5000; // in milliseconds
+			const now = Date.now();
+			const timeElapsed = now - startTime;
 
-		useFrame((state, delta) => {
-			const t = (state.clock.elapsedTime % duration) / duration;
-			const point = catmullCurve.getPointAt(t);
-			planeRef.current.position.copy(point);
+			// If the animation is not yet complete
+			if (timeElapsed < duration) {
+				// Calculate the interpolation factor
+				const t = timeElapsed / duration;
+
+				// Get the point on the curve at the current interpolation factor
+				const currentPosition = curve.getPoint(t);
+
+				// Update the position of the mesh
+				planeRef.current.position.copy(currentPosition);
+
+				// if the startPoint is to the left of HQ
+				if (startVector.x > 0) {
+					planeRef.current.lookAt(endVector);
+					planeRef.current
+						.rotateOnAxis(new Vector3(0, 1, 0), Math.PI * 2)
+						.rotateOnAxis(new Vector3(0, 0, 1), Math.PI);
+				} else {
+					planeRef.current.lookAt(endVector);
+				}
+			}
+		};
+
+		// Call the animate function in the useFrame hook
+		useFrame(() => {
+			const curve = new QuadraticBezierCurve3(
+				startVector,
+				midVector,
+				endVector
+			);
+			animate(curve);
 		});
 
 		return (
-			<mesh ref={planeRef}>
-				<boxGeometry args={[0.3, 0.3, 0.3]} />
-				<meshStandardMaterial />
-			</mesh>
+			<Suspense fallback={null}>
+				<mesh ref={planeRef}>
+					<Airplane rotation={[0, -0.5, 1.5]} />
+				</mesh>
+			</Suspense>
 		);
 	}
 }

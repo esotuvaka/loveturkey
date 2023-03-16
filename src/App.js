@@ -14,6 +14,8 @@ function App() {
 
 	const [index, setIndex] = useState(0);
 
+	const [planeAnimation, setPlaneAnimation] = useState(false);
+
 	const isDataFetched = useRef(false);
 
 	const fetchAirports = async () => {
@@ -55,21 +57,19 @@ function App() {
 		}
 	}, []);
 
-	function confirmVisit() {
-		// Needs to start a fetch for tourist destinations
-		// start the plane flying animation
-		// prevent the search functionality
-	}
-
 	return (
 		<main className="h-full w-full">
 			<UI
 				changeIndex={(data) => {
 					setIndex(data);
 					setLoading(false);
+					setPlaneAnimation(false);
 					console.log("INDEX HERE: " + (index + 1));
 				}}
-				confirmVisit={confirmVisit()}
+				confirmVisit={() => {
+					setPlaneAnimation(true);
+					console.log("Plane is animating");
+				}}
 				loading={loading}
 				latitude={airport?.latitude_deg}
 				longitude={airport?.longitude_deg}
@@ -87,6 +87,7 @@ function App() {
 						<Earth
 							latitude={airport?.latitude_deg}
 							longitude={airport?.longitude_deg}
+							planeAnimation={planeAnimation}
 						/>
 					</Suspense>
 				</Canvas>
