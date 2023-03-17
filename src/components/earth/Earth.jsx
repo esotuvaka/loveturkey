@@ -42,11 +42,6 @@ export function Earth({ latitude, longitude, planeAnimation }) {
 		config: config.slow,
 	});
 
-	// const pathUpdater = useCallback((startPoint, endPoint, midPoint) => {
-	// 	const path = new CatmullRomCurve3([startPoint, endPoint, midPoint]);
-	// 	handleCurve(() => path);
-	// }, []);
-
 	const Heart = forwardRef((props, ref) => {
 		const getHeartShape = () => {
 			const x = 0,
@@ -149,12 +144,12 @@ export function Earth({ latitude, longitude, planeAnimation }) {
 		const tempMidVec = new Vector3();
 
 		const startTime = useRef(Date.now());
-		const duration = 500;
+		const DURATION = 500;
 
 		useFrame(() => {
 			const timeElapsed = Date.now() - startTime.current;
 
-			if (timeElapsed < duration) {
+			if (timeElapsed < DURATION) {
 				// Get the positions of the start and end points
 				start.current.getWorldPosition(tempStartVec);
 				end.current.getWorldPosition(tempEndVec);
@@ -190,7 +185,7 @@ export function Earth({ latitude, longitude, planeAnimation }) {
 		useEffect(() => {
 			const timer = setTimeout(() => {
 				startTime.current = Date.now();
-			}, duration);
+			}, DURATION);
 
 			return () => {
 				console.log("CLEANUP");
@@ -216,16 +211,15 @@ export function Earth({ latitude, longitude, planeAnimation }) {
 
 		// Define the animate function
 		const animate = (curve) => {
-			const duration = 5000; // in milliseconds
+			const DURATION = 5000; // in milliseconds
 			const now = Date.now();
 			const timeElapsed = now - startTime;
 
-			// If the animation is not yet complete
-			if (timeElapsed < duration) {
-				// Calculate the interpolation factor
-				const t = timeElapsed / duration;
+			if (timeElapsed < DURATION) {
+				// Calculate the % complete
+				const t = timeElapsed / DURATION;
 
-				// Get the point on the curve at the current interpolation factor
+				// Get the point on the curve at the current %
 				const currentPosition = curve.getPoint(t);
 
 				// Update the position of the mesh
